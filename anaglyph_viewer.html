@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Anaglyph Video Viewer</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .makeanaglyph {
+      width: 512px;
+      height: 512px;
+      overflow: hidden;
+    }
+
+    .makeanaglyph video {
+      width: 200%;
+      max-width: 200%;
+      /* height: 100%; */
+      filter: url(#anaglyphfilter);
+    }
+  </style>
+</head>
+<body>
+  <!-- Anaglyph filter definition -->
+  <svg id="svgleft" xmlns="http://www.w3.org/2000/svg" height="0">
+    <defs>
+      <filter id="anaglyphfilter" x="0" y="0" width="100%" height="100%">
+        <feColorMatrix in="SourceGraphic" type="matrix"
+                       values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0 1" 
+                       result="left" />
+        <feColorMatrix in="SourceGraphic" type="matrix"
+                       values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1"/>
+        <feOffset id="rightshift" dx="-512" dy="0" result="right" />
+        <feBlend in="left" in2="right" mode="screen" />
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="makeanaglyph">
+    <video id="video" autoplay muted loop>
+      <source src="" type="video/mp4">
+    </video>
+  </div>
+
+  <script>
+    // Get the video source from the URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoSrc = urlParams.get('video');
+    if (videoSrc) {
+      document.querySelector('#video source').src = decodeURIComponent(videoSrc);
+      document.querySelector('#video').load();
+    }
+  </script>
+</body>
+</html> 
