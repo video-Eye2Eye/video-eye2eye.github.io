@@ -129,6 +129,14 @@
 
   </style>
   <script>
+    // Browser detection for iOS and Safari
+    function isIOSorSafari() {
+      const ua = navigator.userAgent;
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+      return isIOS || isSafari;
+    }
+
     // Function to handle video click based on current mode
     function handleVideoClick(event, videoSrc) {
       const unit = event.currentTarget.closest('.unit');
@@ -143,6 +151,34 @@
       }
       event.preventDefault();
     }
+
+    // Function to get anaglyph video source based on original source
+    function getAnaglyphSrc(originalSrc) {
+      // Remove .mp4 extension and add _anaglyph.mp4
+      return originalSrc.replace('.mp4', '_anaglyph.mp4');
+    }
+
+    // Initialize videos when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      if (isIOSorSafari()) {
+        // For iOS/Safari: replace CSS filter-based anaglyph with pre-rendered anaglyph videos
+        document.querySelectorAll('.makeanaglyph video').forEach(function(video) {
+          const source = video.querySelector('source');
+          if (source) {
+            // Store the original source for toggling
+            source.dataset.originalSrc = source.src;
+            // Set the anaglyph version
+            source.src = getAnaglyphSrc(source.src);
+            // Remove the filter that would be applied
+            video.style.filter = 'none';
+            video.style.width = '100%';
+            video.style.maxWidth = '100%';
+            // Reload the video with new source
+            video.load();
+          }
+        });
+      }
+    });
   </script>
 </head>
 
@@ -329,6 +365,7 @@
     <h2 class="title is-3 has-text-centered">Sample Results: Anaglyph / SBS</h2>
     <p class="has-text-justified" style="margin-bottom: 2rem;">
       Click on the buttons to toggle between anaglyph and side-by-side (SBS) views.  <br>
+      <strong>Note:</strong> Viewing anaglyph content on Safari/iOS devices may not provide the optimal experience due to browser limitations. For the best experience, we recommend using Chrome on desktop. <br>
       For more videos, see <a href="results.html"> <strong><u>results page</u></strong></a>. <br>
       To see the restuls in a VR headset, use the headset browser and press <a href="3D-viewer/results_viewers.html"><strong><u>here</u></strong></a>. 
 
@@ -457,6 +494,7 @@
       </ul>
       <p style="margin-bottom: 2rem;"> 
         We combine these stages by first generating a low-resolution output with the base model, then upsampling and noising it, then denoising it with the refiner. This results in a high-resolution video that maintains both a proper 3D effect and high visual quality (bottom right).
+        <strong>Note:</strong> Viewing anaglyph content on Safari/iOS devices may not provide the optimal experience due to browser limitations. For the best experience, we recommend using Chrome on desktop. <br>
       </p>
       <!-- <hr> -->
     <div class="row">
@@ -540,6 +578,7 @@
         <br>This baseline struggles with videos containing specular reflections or transparent objects, as a single depth cannot be assigned to each pixel (e.g., when the depth of the reflection and that of the surface differ). 
         <br>Consequently, reflections and transparent surfaces are incorrectly warped, resulting in distorted or incorrect 3D effects. StereoCrafter additionally tends to produce warping artifacts, such as blurred edges and temporal inconsistencies. 
         <br>In contrast, our method generates stereo RGB views directly, bypassing explicit depth estimation and leveraging the generative model's implicit knowledge about materials and optics to handle challenging scenarios effectively.
+        <strong>Note:</strong> Viewing anaglyph content on Safari/iOS devices may not provide the optimal experience due to browser limitations. For the best experience, we recommend using Chrome on desktop. <br>
         <br>For more videos, please see the <a href="warp_inp_comparison.html"><strong><u>comparisons page</u></strong></a>. 
         <br>To view the comparison in a VR headset, use the headset browser and press <a href="3D-viewer/comparison_spatial.html"><strong><u>here</u></strong></a>. 
         </p>
@@ -899,14 +938,28 @@
       if (event.target.classList.contains('toggleButton')) {
         const unit = event.target.closest('.unit');
         const videoContainer = unit.querySelector('.videoContainer');
-
+        const video = videoContainer.querySelector('video');
+        const source = video.querySelector('source');
+        
         // Toggle video container class
         if (videoContainer.classList.contains('makeanaglyph')) {
           videoContainer.classList.remove('makeanaglyph');
           videoContainer.classList.add('sbs');
+          
+          // For iOS/Safari: switch back to original video when toggling to SBS
+          if (isIOSorSafari() && source.dataset.originalSrc) {
+            source.src = source.dataset.originalSrc;
+            video.load();
+          }
         } else {
           videoContainer.classList.remove('sbs');
           videoContainer.classList.add('makeanaglyph');
+          
+          // For iOS/Safari: switch to anaglyph version when toggling to anaglyph
+          if (isIOSorSafari() && source.dataset.originalSrc) {
+            source.src = getAnaglyphSrc(source.dataset.originalSrc);
+            video.load();
+          }
         }
 
         // Toggle button text
